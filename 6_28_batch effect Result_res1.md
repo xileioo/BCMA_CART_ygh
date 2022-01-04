@@ -1,3 +1,4 @@
+
 ```
 library(Seurat)
 setwd("g:/work/2018_01/cart_singleCellInDrop-seq/data_12_10xgenomics/outs/my_output/out201907/")
@@ -417,6 +418,8 @@ geom_point(aes(col=CD28),alpha=.8,size=0.01) +
           panel.grid.minor=element_blank(),plot.background=element_blank())
 ggsave("raw_figure/1_intergrated_UMAP_marker_CD28.png",units="in", dpi=300, device='png')
 ```
+![plot](./cluster.png)
+
 ## cluster correlation 
 ```
 library(Seurat)
