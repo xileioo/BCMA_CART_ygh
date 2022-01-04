@@ -1,0 +1,762 @@
+file from: Work/2018/cart_singleCellInDrop-seq/data_12_10xgenomics/outs/my_output/out201907/ygh_2019_08_14.Rmd
+
+---
+title: "ygh R Notebook"
+output: html_notebook
+---
+```{r}
+library(Seurat)
+library(ggplot2)
+library(RColorBrewer)
+library(magrittr) # need to run every time you start R and want to use %>%
+library(dplyr)
+setwd("/Users/xileioo/Documents/work/2018/cart_singleCellInDrop-seq/data_12_10xgenomics/outs/my_output/out201907")
+cart <- readRDS("1_cart_ygh_intergrated.rds")
+meta.col <- read.table("1_UMAP_cluster_color.txt",comment.char = "",check.names = FALSE,head=T)
+myColors <- as.character(meta.col$Var1)
+names(myColors) <- meta.col$group
+colScale <- scale_fill_manual(name = "group",values = myColors)
+
+mymarker <- c("CD3D","CD4","CD8B","CD25","FOXP3","GZMB","IFNG","CD62L","CCR7","IL7R","CD160","ZNF683","IFIT1","JUN")
+
+mycolors = c("#E71918","#357FBC","#45AD4C","#A351A3","#FF7E00","#FFED22","#AD5322","#F99DD1","#fb8072","#59C4A6","#FD8E63","#90A1CF","#9A9A9A","#A6DB4C","#E3C594","#92D3C8","#003c30","#dfc27d","#c51b7d","#053061","#67001f","#E88AC0","#1a1a1a","#17617B")
+p <- DimPlot(cart, reduction = "umap", label = TRUE, cols= mycolors,label.size=20, vector.friendly=T,pt.size=0.1,order=c(23:0))
+pbuild <- ggplot2::ggplot_build(p) # Use ggplot_build to deconstruct the ggplot object
+pdata <- pbuild$data[[1]] #
+metaData <-cart@meta.data
+pdata$samples <- metaData$orig.ident
+pdata$group <- metaData$seurat_clusters
+rownames(pdata) <- rownames(metaData)
+head(pdata)
+
+pdata <- FeaturePlot(cart, "PDCD1")
+colnames(pdata$data)[4] = "feature"
+ggplot(pdata$data, aes(UMAP_1,UMAP_2)) +
+geom_point(aes(col=feature, size = feature, alpha = feature)) +
+     theme_bw() +
+     scale_color_gradient(low="grey", high="#910e1a") +
+     scale_size_continuous(range = c(0.001,0.4)) +
+     scale_alpha_continuous(range = c(0.1,1)) +
+     guides(size = "none", alpha = "none") +
+     #guides(size = "none", alpha = "none", col = guide_colourbar(barheight = 8)) +
+    theme(axis.line=element_blank(),axis.text.x=element_blank(),
+          axis.text.y=element_blank(),axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),
+          legend.position=c(0.1,0.8),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 20),
+          panel.background=element_blank(),
+          panel.border=element_blank(),
+          panel.grid.major=element_blank(),
+          panel.grid.minor=element_blank(),
+          plot.background=element_blank())
+#ggsave("raw_figure/1_intergrated_UMAP_marker_CD160_2.png",units="in", dpi=600, device='png',width = 6,height = 6)
+
+pdata <- FeaturePlot(cart, "JUN")
+colnames(pdata$data)[4] = "feature"
+ggplot(pdata$data, aes(UMAP_1,UMAP_2)) +
+geom_point(aes(col=feature, size = feature,alpha = feature)) +
+     theme_bw() +
+     scale_color_gradient(low="grey", high="#910e1a", limits = c(0,3)) +
+     scale_size_continuous(range = c(0.001,0.4)) +
+     scale_alpha_continuous(range = c(0.005,1)) +
+     guides(size = "none", alpha = "none") +
+    theme(axis.line=element_blank(),axis.text.x=element_blank(),
+          axis.text.y=element_blank(),axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),
+          legend.position=c(0.1,0.8),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 20),
+          panel.background=element_blank(),
+          panel.border=element_blank(),
+          panel.grid.major=element_blank(),
+          panel.grid.minor=element_blank(),
+          plot.background=element_blank())
+#ggsave("raw_figure/1_intergrated_UMAP_marker_JUN_2.png",units="in", dpi=600, device='png',width = 6,height = 6)
+```
+
+```{r}
+library(Seurat)
+library(ggplot2)
+library(RColorBrewer)
+library(magrittr) # need to run every time you start R and want to use %>%
+library(dplyr)
+library(plyr)
+setwd("/Users/xileioo/Documents/work/2018/cart_singleCellInDrop-seq/data_12_10xgenomics/outs/my_output/out201907")
+cart <- readRDS("1_cart_ygh_intergrated.rds")
+cd4 <- FeaturePlot(cart, "CD4")
+cd8 <- FeaturePlot(cart, "CD8A")
+mycolors <- c("#f3e96b", "#c2d3da", "#f28a30", "#81a3a7", "#f05837", "#8a8683")
+p <- DimPlot(cart, reduction = "umap", group.by = "orig.ident", cols=mycolors, label.size=20, vector.friendly=T,pt.size=0.1)
+pbuild <- ggplot2::ggplot_build(p) # Use ggplot_build to deconstruct the ggplot object
+pdata <- pbuild$data[[1]] #
+metaData <-cart@meta.data
+pdata$samples <- metaData$orig.ident
+pdata$group <- metaData$seurat_clusters
+pdata$CD4 <- cd4$data$CD4
+pdata$CD8 <- cd8$data$CD8A
+rownames(pdata) <- rownames(metaData)
+head(pdata)
+keep1 <- (pdata$CD4 > 0 | pdata$CD8 > 0)
+pdata2 <- pdata[keep1,]
+pdata2$type <- "CD8"
+pdata2[(pdata2$CD4 > 1 | pdata2$CD8 == 0),14] = "CD4"
+df <- pdata2[,c(11,14)]
+pd <- ddply(df, .(df$samples, df$type), nrow)
+pd <- pd[-c(3,4),]
+names(pd) <- c("samples","type","freq")
+pd
+#   samples type  freq
+#1  sample1  CD4  2647
+#2  sample1  CD8  1483
+#5  sample3  CD4   201
+#6  sample3  CD8 10488
+#7  sample4  CD4   592
+#8  sample4  CD8  4846
+#9  sample5  CD4   251
+#10 sample5  CD8  6456
+#11 sample6  CD4  1022
+#12 sample6  CD8  7307
+
+#ggplot(data = pd, aes(x = samples, y = freq, fill = type)) + geom_bar(stat = "identity")
+library(scales)
+mycolors <- c("#de8e08", "#878787")
+mycolors <- c("#d9a465", "#4f8d8f")
+ggplot(pd, aes(x=samples, y=freq,fill=type)) +
+    geom_bar( stat="identity", position="fill", color = "black",width = 0.7) +
+    scale_y_continuous(labels = percent_format()) +
+    scale_x_discrete(labels=c("CARTproduct","CART at CART peak level time point","Normal T at CART peak level time point","CART at leukemia remission time point","Normal T at leukemia remission time point")) +
+    scale_fill_manual(values = mycolors) +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+    labs(x="") +
+    coord_flip()
+#pdf("raw_figure/4_percentage_barplot_CD4CD8_byeachsamples.pdf")
+```
+
+```{r}
+### UMAP plot by real random percentage
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+setwd("/Users/xileioo/Documents/work/2018/cart_singleCellInDrop-seq/data_12_10xgenomics/outs/my_output/out201907")
+ygh <- read.csv("../../../../clinicalAndSampleInfo/from_lixia/ygh_summary.txt",head=T,sep="\t")
+#head(ygh)
+#      time days_CART_after days_CART_after_num lymphocytes1 CD45  CD3 CARneg CARnegCD8 CARnegCD4 CARpos
+#1 20181006            day0                   0          0.0  0.0 0.00    0.0       0.0       0.0   0.00
+#2 20181112            day1                   1         69.0 99.9 0.40   98.5      20.8      77.5   1.54
+#3 20181113            day2                   2         61.5 99.8 0.29   94.9      21.0      75.8   5.14
+#4 20181114            day3                   3         63.0 99.6 0.27   78.4      16.9      80.5  21.60
+#5 20181115            day4                   4         79.8 99.8 0.88   53.7      16.4      81.6  46.20
+#6 20181116            day5                   5         88.6 99.1 5.42   33.0      27.4      70.9  67.00
+#  CARposCD8 CARposCD4 lymphocytes2 BCMA_CD138 CD45_2
+#1      0.00       0.0         79.3       72.3  14.50
+#2     12.30      76.5         66.9       60.1   0.45
+#3      6.00      87.0         60.7       64.4   0.47
+#4      9.84      85.6         60.2       89.5   0.65
+#5     17.10      81.6         63.3       77.9   0.18
+#6     46.70      52.2         72.4       54.1   2.37
+ygh <- ygh[-c(1,16),]
+ygh$lymphoc_CD3neg_absoluteValue <- ygh$lymphocytes1*(1-ygh$CD45*ygh$CD3*0.0001)*0.01
+ygh$PBMC_nonlymphoc <- (1-ygh$lymphocytes1*0.01)
+ygh$lymphoc_CD3_CARneg <- ygh$lymphocytes1*ygh$CD45*ygh$CD3*ygh$CARneg*10^-8
+ygh$lymphoc_CD3_CARpos <- ygh$lymphocytes1*ygh$CD45*ygh$CD3*ygh$CARpos*10^-8
+real_percent <- ygh[ygh$days_CART_after %in% c("day1", "day8", "day15"),c(2,19,18)]
+real_percent
+real_percent <- real_percent[,-1]
+#   days_CART_after lymphoc_CD3_CARpos lymphoc_CD3_CARneg
+#2             day1       0.0000424615        0.002715881
+#9             day8       0.8345273126        0.028651817
+#15           day15       0.1819707833        0.027995505
+real_cell_count <- round(real_percent * 14000)
+real_cell_count
+#   lymphoc_CD3_CARpos lymphoc_CD3_CARneg
+#2                   1                 38
+#9               11683                401
+#15               2548                392
+mycolors <- c("#f3e96b", "#c2d3da", "#f28a30", "#81a3a7", "#f05837", "#8a8683")
+p <- DimPlot(cart, reduction = "umap", group.by = "orig.ident", cols=mycolors, label.size=20, vector.friendly=T,pt.size=0.1)
+pbuild <- ggplot2::ggplot_build(p) # Use ggplot_build to deconstruct the ggplot object
+pdata <- pbuild$data[[1]] #
+metaData <-cart@meta.data
+pdata$samples <- metaData$orig.ident
+pdata$group <- metaData$seurat_clusters
+rownames(pdata) <- rownames(metaData)
+head(pdata)
+sample1 <- as.data.frame(subset(pdata, samples == "sample1"))
+random_sample3 <- as.data.frame(subset(pdata, samples == "sample3") %>% sample_n(11683))  
+random_sample4 <- as.data.frame(subset(pdata, samples == "sample4") %>% sample_n(401))  
+random_sample5 <- as.data.frame(subset(pdata, samples == "sample5") %>% sample_n(2548))  
+random_sample6 <- as.data.frame(subset(pdata, samples == "sample6") %>% sample_n(392))  
+df <- rbind(sample1, random_sample3, random_sample4, random_sample5,random_sample6)
+ggplot(df, aes(x,y)) + geom_point(colour = df$colour,alpha=.8,size=.6) +
+theme_bw() +
+#scale_colour_manual(values=mycolors)  +
+labs(title = "") +
+theme(axis.line=element_blank(),axis.text.x=element_blank(),
+          axis.text.y=element_blank(),axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),legend.position="none",
+          panel.background=element_blank(),
+          #panel.border=element_blank(),
+          panel.grid.major=element_blank(),
+          panel.grid.minor=element_blank(),plot.background=element_blank())
+#ggsave("/Users/xileioo/Documents/work/2018/cart_singleCellInDrop-seq/data_12_10xgenomics/outs/my_output/out201907/raw_figure/1_intergrated_UMAP_samples_asRealpercentage.png",units="in", dpi=300, device='png')
+
+mycolors = c("#E71918","#357FBC","#45AD4C","#A351A3","#FF7E00","#FFED22","#AD5322","#F99DD1","#fb8072","#59C4A6","#FD8E63","#90A1CF","#9A9A9A","#A6DB4C","#E3C594","#92D3C8","#003c30","#dfc27d","#c51b7d","#053061","#67001f","#E88AC0","#1a1a1a","#17617B")
+p <- DimPlot(cart, reduction = "umap", label = TRUE, cols=mycolors,label.size=8, vector.friendly=T)
+pbuild <- ggplot2::ggplot_build(p) # Use ggplot_build to deconstruct the ggplot object
+pdata <- pbuild$data[[1]]
+metaData <-cart@meta.data
+rownames(pdata) <- rownames(metaData)
+df$colour_cluster <- pdata[rownames(df),1]
+head(df)
+ggplot(df, aes(x,y)) + geom_point(colour = df$colour_cluster,alpha=.8,size=0.6) +
+theme_bw() +
+labs(title = "") +
+theme(axis.line=element_blank(),axis.text.x=element_blank(),
+          axis.text.y=element_blank(),axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),legend.position="none",
+          panel.background=element_blank(),
+          panel.border=element_blank(),
+          panel.grid.major=element_blank(),
+          panel.grid.minor=element_blank(),plot.background=element_blank())
+ggsave("/Users/xileioo/Documents/work/2018/cart_singleCellInDrop-seq/data_12_10xgenomics/outs/my_output/out201907/raw_figure/1_intergrated_UMAP_clusters_asRealpercentage.png",units="in", dpi=300, device='png')
+
+```
+
+```{r}
+### bar plot by real random percentage
+tmeta <- cart@meta.data
+random_sample3 <- as.data.frame(subset(tmeta, orig.ident == "sample3") %>% sample_n(11683))  
+random_sample4 <- as.data.frame(subset(tmeta, orig.ident == "sample4") %>% sample_n(401))  
+random_sample5 <- as.data.frame(subset(tmeta, orig.ident == "sample5") %>% sample_n(2548))  
+random_sample6 <- as.data.frame(subset(tmeta, orig.ident == "sample6") %>% sample_n(392))  
+random_total <- rbind(random_sample3, random_sample4, random_sample5, random_sample6)
+plotdata <- random_total[,c(1,7)]
+head(plotdata)
+#             orig.ident seurat_clusters
+#sample3_5477    sample3              12
+#sample3_2548    sample3              18
+#sample3_7441    sample3              16
+#sample3_808     sample3               1
+#sample3_9119    sample3               1
+library(plyr)
+library(scales)
+library(ggplot2)
+df <- ddply(plotdata, .(plotdata$orig.ident, plotdata$seurat_clusters), nrow)
+names(df) <- c("samples", "intergrate_cluster","freq")
+head(df)
+#  samples intergrate_cluster freq
+#1 sample3                  0  582
+#2 sample3                  1 4686
+#3 sample3                  2  140
+#4 sample3                  3    2
+#ggplot(data = df, aes(x = intergrate_cluster, y = freq, fill = samples)) + geom_bar(stat = "identity")
+mycolors <- c("#f28a30", "#81a3a7", "#f05837", "#8a8683")
+ggplot(df, aes(fill=samples, y=freq, x=intergrate_cluster)) +
+    geom_bar( stat="identity", position="fill",width = 0.8) +
+    scale_y_continuous(labels = percent_format())  +
+    scale_fill_manual(values = mycolors) +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+    labs(x="")
+#pdf("raw_figure/4_percentage_barplot_CD4CD8_byeachCluster.pdf")
+```
+
+```{r}
+#### exhausted gene score ###
+metaData <-cart@meta.data
+LAG3 <- FeaturePlot(cart, "LAG3")
+PDCD1 <- FeaturePlot(cart, "PDCD1")
+TIGIT <- FeaturePlot(cart, "TIGIT")
+HAVCR2 <- FeaturePlot(cart, "HAVCR2")
+CTLA4 <- FeaturePlot(cart, "CTLA4")
+pdata <- cbind(LAG3$data, PDCD1$data$PDCD1, TIGIT$data$TIGIT, HAVCR2$data$HAVCR2, CTLA4$data$CTLA4)
+colnames(pdata)[5:8] <- c("PDCD1","TIGIT","HAVCR2","CTLA4")
+pdata$feature <- rowMeans(pdata[,c(4:8)])
+head(pdata)
+pdata$samples <- metaData$orig.ident
+pdata2 <- pdata[pdata$samples %in% c("sample1","sample3","sample5"),]
+dim(pdata2)
+#[1] 28516    11
+pdata2$ident <- as.character(pdata2$ident)
+pdata2 <- pdata2[!(pdata2$ident %in% c(8,14,19,21,23,9,17,3)),]
+pdata2 <- pdata2[pdata2$feature > 0.001,]
+table(pdata2$ident)
+#   3   10    4   15   16    7    6   13   18   12    1    0   20    5   22    2   11
+#   6   76 2256  285  672 1688 2128  991  642  904 3967 2909    7  139   70  112   16
+meta.col <- read.table("1_UMAP_cluster_color.txt",comment.char = "",check.names = FALSE,head=T)
+my_order <- c(10,4,15,16,7,6,13,18,12,1,0,20,5,22,2,11)
+meta.col <- meta.col[meta.col$group %in% my_order,]
+meta.col$group <- factor(meta.col$group, levels = my_order)
+myColors <- c("#FD8E63","#FF7E00","#92D3C8","#003c30","#F99DD1","#AD5322","#A6DB4C","#c51b7d","#9A9A9A","#357FBC","#E71918","#67001f","#FFED22","#1a1a1a","#45AD4C","#90A1CF")
+pdata2$ident <- factor(pdata2$ident, levels = c(10,4,15,16,7,6,13,18,12,1,0,20,5,22,2,11))
+ggplot(pdata2, aes(x=ident,y=feature, fill=ident)) +
+    geom_boxplot() +
+    scale_fill_manual(values=myColors) +
+    scale_y_continuous(limits = c(0,0.6)) +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+#pdf("raw_figure/5_score_boxplot_exhaustedScore.pdf")  
+```
+
+```{r}
+#### GZBM correlation gene score ###
+exp <- GetAssayData(object = cart, slot = 'data')
+cor_gzmb <- read.table("3_GZMB_PRF1_correlationGene.txt")
+cytotoxic_gene <- na.omit(cor_gzmb[(cor_gzmb$GZMB >= 0.4 | cor_gzmb$PRF1 >= 0.4),])
+mydata <- exp[rownames(cytotoxic_gene),]
+mycolors = c("#E71918","#357FBC","#45AD4C","#A351A3","#FF7E00","#FFED22","#AD5322","#F99DD1","#fb8072","#59C4A6","#FD8E63","#90A1CF","#9A9A9A","#A6DB4C","#E3C594","#92D3C8","#003c30","#dfc27d","#c51b7d","#053061","#67001f","#E88AC0","#1a1a1a","#17617B")
+p <- DimPlot(cart, reduction = "umap", label = TRUE, cols= mycolors,label.size=20, vector.friendly=T,pt.size=0.1)
+pbuild <- ggplot2::ggplot_build(p) # Use ggplot_build to deconstruct the ggplot object
+pdata <- pbuild$data[[1]] #
+metaData <-cart@meta.data
+pdata$samples <- metaData$orig.ident
+pdata$group <- metaData$seurat_clusters
+rownames(pdata) <- rownames(metaData)
+head(pdata)
+pdata$feature <- colMeans(as.data.frame(mydata))
+head(pdata)
+#           colour           x          y PANEL group shape size fill alpha stroke samples   feature
+#sample1_1 #F99DD1 -9.42727757 -1.3533924     1     7    19  0.1   NA    NA    0.5 sample1 0.3549418
+#sample1_4 #FF7E00 -3.07397604 -2.5024652     1     4    19  0.1   NA    NA    0.5 sample1 0.4063117
+#sample1_5 #FF7E00 -1.06721973 -5.6507416     1     4    19  0.1   NA    NA    0.5 sample1 0.3497304
+pdata2 <- pdata[pdata$samples %in% c("sample1","sample3","sample5"),]
+dim(pdata2)
+#[1] 28516    11
+pdata2$group <- as.character(pdata2$group)
+pdata2 <- pdata2[pdata2$feature > 0.001,]
+table(pdata2$group)
+#   3   10    4   15   16    7    6   13   18   12    1    0   20    5   22    2   11
+#   6   76 2256  285  672 1688 2128  991  642  904 3967 2909    7  139   70  112   16
+pdata2 <- pdata2[!(pdata2$group %in% c(8,14,19,21,23,9,17,3)),]
+myColors <- c("#FD8E63","#FF7E00","#92D3C8","#003c30","#F99DD1","#AD5322","#A6DB4C","#c51b7d","#9A9A9A","#357FBC","#E71918","#67001f","#FFED22","#1a1a1a","#45AD4C","#90A1CF")
+pdata2$group <- factor(pdata2$group, levels = c(10,4,15,16,7,6,13,18,12,1,0,20,5,22,2,11))
+ggplot(pdata2, aes(x=group,y=feature, fill=group)) +
+    geom_boxplot() +
+    scale_fill_manual(values=myColors) +
+    scale_y_continuous(limits = c(0,2.5)) +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+#pdf("raw_figure/5_score_boxplot_CytotoxicScore.pdf")
+```
+
+```{r}
+#### cell cycle gene score ###
+exp <- GetAssayData(object = cart, slot = 'data')
+cc.file <- read.table("cell_cycle_genes.txt",head=T)
+mygenes <- as.character(unique(cc.file$gene))
+mygenes <- intersect(mygenes, rownames(exp))
+mydata <- exp[mygenes,]
+mycolors = c("#E71918","#357FBC","#45AD4C","#A351A3","#FF7E00","#FFED22","#AD5322","#F99DD1","#fb8072","#59C4A6","#FD8E63","#90A1CF","#9A9A9A","#A6DB4C","#E3C594","#92D3C8","#003c30","#dfc27d","#c51b7d","#053061","#67001f","#E88AC0","#1a1a1a","#17617B")
+p <- DimPlot(cart, reduction = "umap", label = TRUE, cols= mycolors,label.size=20, vector.friendly=T,pt.size=0.1)
+pbuild <- ggplot2::ggplot_build(p) # Use ggplot_build to deconstruct the ggplot object
+pdata <- pbuild$data[[1]] #
+metaData <-cart@meta.data
+pdata$samples <- metaData$orig.ident
+pdata$group <- metaData$seurat_clusters
+rownames(pdata) <- rownames(metaData)
+head(pdata)
+pdata$feature <- colMeans(as.data.frame(mydata))
+head(pdata)
+#           colour           x          y PANEL group shape size fill alpha stroke samples   feature
+#sample1_1 #F99DD1 -9.42727757 -1.3533924     1     7    19  0.1   NA    NA    0.5 sample1 0.3549418
+#sample1_4 #FF7E00 -3.07397604 -2.5024652     1     4    19  0.1   NA    NA    0.5 sample1 0.4063117
+#sample1_5 #FF7E00 -1.06721973 -5.6507416     1     4    19  0.1   NA    NA    0.5 sample1 0.3497304
+pdata2 <- pdata[pdata$samples %in% c("sample1","sample3","sample5"),]
+dim(pdata2)
+#[1] 28516    11
+pdata2$group <- as.character(pdata2$group)
+pdata2 <- pdata2[pdata2$feature > 0.001,]
+table(pdata2$group)
+#   3   10    4   15   16    7    6   13   18   12    1    0   20    5   22    2   11
+#   6   76 2256  285  672 1688 2128  991  642  904 3967 2909    7  139   70  112   16
+pdata2 <- pdata2[!(pdata2$group %in% c(8,14,19,21,23,9,17,3)),]
+myColors <- c("#FD8E63","#FF7E00","#92D3C8","#003c30","#F99DD1","#AD5322","#A6DB4C","#c51b7d","#9A9A9A","#357FBC","#E71918","#67001f","#FFED22","#1a1a1a","#45AD4C","#90A1CF")
+pdata2$group <- factor(pdata2$group, levels = c(10,4,15,16,7,6,13,18,12,1,0,20,5,22,2,11))
+ggplot(pdata2, aes(x=group,y=feature, fill=group)) +
+    geom_boxplot() +
+    scale_fill_manual(values=myColors) +
+    scale_y_continuous(limits = c(0,1)) +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+#pdf("raw_figure/5_score_boxplot_cellcycleScore.pdf")
+```
+```{r}
+#### cell cycle CD4+ CD8+ CART gene score ###
+library(Seurat)
+library(ggplot2)
+library(RColorBrewer)
+library(magrittr) # need to run every time you start R and want to use %>%
+library(dplyr)
+library(plyr)
+setwd("/Users/xileioo/Documents/work/2018/cart_singleCellInDrop-seq/data_12_10xgenomics/outs/my_output/out201907")
+cart <- readRDS("1_cart_ygh_intergrated.rds")
+exp <- GetAssayData(object = cart, slot = 'data')
+cc.file <- read.table("cell_cycle_genes.txt",head=T)
+mygenes <- as.character(unique(cc.file$gene))
+mygenes <- intersect(mygenes, rownames(exp))
+mydata <- exp[mygenes,]
+CD4 <- FeaturePlot(cart, "CD4")
+CD8A <- FeaturePlot(cart, "CD8A")
+pdata <- data.frame(metaData[,c(1,7)], CD4 = CD4$data$CD4, CD8 = CD8A$data$CD8A)
+#          orig.ident seurat_clusters       CD4 CD8
+#sample1_1    sample1               7 0.0000000   0
+#sample1_4    sample1               4 0.7806414   0
+#sample1_5    sample1               4 0.0000000   0
+pdata$feature <- colMeans(as.data.frame(mydata))
+pdata2 <- pdata[pdata$CD4 >0 | pdata$CD8 > 0,]
+pdata2$type = "CD8"
+pdata2[((pdata2[,3] > pdata2[,4])),6] = "CD4"
+table(pdata2$type)
+#  CD4   CD8
+# 4370 30927
+head(pdata2)
+#           orig.ident seurat_clusters       CD4       CD8 type    feature
+#sample1_4     sample1               4 0.7806414 0.0000000  CD4 0.18654756
+#sample1_8     sample1               4 0.9250800 0.0000000  CD4 0.15320152
+#sample1_9     sample1              15 1.1930937 0.0000000  CD4 0.06005431
+#sample1_10    sample1               7 0.4946213 0.0000000  CD4 0.65087913
+pdata2 <- pdata2[pdata2[,1] != "sample2",]
+mycolors <- c("#d9a465", "#4f8d8f")
+ggplot(pdata2, aes(x=orig.ident, y=feature, fill=type)) +
+    geom_boxplot() +
+    scale_fill_manual(values=mycolors) +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank())
+wilcox.test(pdata2[pdata2$orig.ident == "sample6" & pdata2$type == "CD4",5],
+            pdata2[pdata2$orig.ident == "sample6" & pdata2$type == "CD8",5],
+            alternative = "less")
+#pdf("raw_figure/5_score_boxplot_cellcycleScore_bySamaples.pdf")
+```
+
+
+```{r}
+#### exhausted gene score ###
+library(Seurat)
+library(ggplot2)
+library(RColorBrewer)
+library(magrittr) # need to run every time you start R and want to use %>%
+library(dplyr)
+setwd("/Users/xileioo/Documents/work/2018/cart_singleCellInDrop-seq/data_12_10xgenomics/outs/my_output/out201907")
+cart <- readRDS("1_cart_ygh_intergrated.rds")
+metaData <-cart@meta.data
+LAG3 <- FeaturePlot(cart, "LAG3")
+PDCD1 <- FeaturePlot(cart, "PDCD1")
+TIGIT <- FeaturePlot(cart, "TIGIT")
+HAVCR2 <- FeaturePlot(cart, "HAVCR2")
+CTLA4 <- FeaturePlot(cart, "CTLA4")
+pdata <- cbind(LAG3$data, PDCD1$data$PDCD1, TIGIT$data$TIGIT, HAVCR2$data$HAVCR2, CTLA4$data$CTLA4)
+colnames(pdata)[5:8] <- c("PDCD1","TIGIT","HAVCR2","CTLA4")
+pdata$feature <- rowMeans(pdata[,c(4:8)])
+head(pdata)
+pdata$samples <- metaData$orig.ident
+pdata2 <- pdata[pdata$ident %in% c("1","8","19"),]
+dim(pdata2)
+#[1] 9112   10
+pdata2$ident <- as.character(pdata2$ident)
+pdata2 <- pdata2[pdata2$feature > 0.001,]
+table(pdata2$ident)
+#   1   19    8
+#4981  478 1937
+
+mycolors = c("#357FBC","#fb8072","#053061")
+pdata2$ident <- factor(pdata2$ident, levels = c(1,8,19))
+ggplot(pdata2, aes(x=ident,y=feature, fill=ident)) +
+    geom_boxplot() +
+    scale_fill_manual(values=mycolors) +
+    scale_y_continuous(limits = c(0,2)) +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank())
+#pdf("raw_figure/5_score_boxplot_exhaustedScore_cluster8_19.pdf")
+```
+
+```{r}
+#### exhausted gene score ###
+library(Seurat)
+library(ggplot2)
+library(RColorBrewer)
+library(magrittr) # need to run every time you start R and want to use %>%
+library(dplyr)
+setwd("/Users/xileioo/Documents/work/2018/cart_singleCellInDrop-seq/data_12_10xgenomics/outs/my_output/out201907")
+cart <- readRDS("1_cart_ygh_intergrated.rds")
+metaData <-cart@meta.data
+IL10 <- FeaturePlot(cart, "IL10")
+TIGIT <- FeaturePlot(cart, "TIGIT")
+a <- IL10$data
+a$TIGIT <- TIGIT$data$TIGIT
+head(a)
+#               UMAP_1    UMAP_2 ident IL10    TIGIT
+#sample4_1 -0.09353537  5.911652     2    0 0.000000
+#sample4_2 -8.75787640 -1.580993     4    0 1.598016
+#sample4_3 -0.52579999  4.759511     2    0 0.000000
+Sa2 <- a[a$IL10 > 0 & a$TIGIT > 0,]
+dim(a)
+#[1] 7559    5
+dim(a2)
+#[1] 951   5
+plot(a2$IL10, a2$TIGIT)
+```
+
+```{r}
+pdata <- FeaturePlot(cart, "TIGIT")
+colnames(pdata$data)[4] = "feature"
+ggplot(pdata$data, aes(UMAP_1,UMAP_2)) +
+geom_point(aes(col=feature, size = feature,alpha = feature)) +
+     theme_bw() +
+     scale_color_gradient(low="grey", high="#910e1a", limits = c(0,3)) +
+     scale_size_continuous(range = c(0.001,0.4)) +
+     scale_alpha_continuous(range = c(0.3,1)) +
+     guides(size = "none", alpha = "none") +
+    theme(axis.line=element_blank(),axis.text.x=element_blank(),
+          axis.text.y=element_blank(),axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),
+          legend.position=c(0.1,0.8),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 20),
+          panel.background=element_blank(),
+          panel.border=element_blank(),
+          panel.grid.major=element_blank(),
+          panel.grid.minor=element_blank(),
+          plot.background=element_blank())
+ggsave("raw_figure/1_intergrated_UMAP_marker_TIGIT_2.png",units="in", dpi=600, device='png',width = 6,height = 6)
+```
+
+```{r}
+setwd("/Users/xileioo/Documents/work/2018/cart_singleCellInDrop-seq/data_12_10xgenomics/outs/my_output/out201907")
+cart <- readRDS("1_cart_ygh_intergrated.rds")
+cluster0vs2.markers <- FindMarkers(cart, ident.1 = 0, ident.2 = 2, logfc.threshold = 0.25)
+cluster1vs2.markers <- FindMarkers(cart, ident.1 = 1, ident.2 = 2, logfc.threshold = 0.25)
+write.table(cluster0vs2.markers, file="gx/findmarker/markers0vs2.txt",quote=F,sep="\t")
+write.table(cluster1vs2.markers, file="gx/findmarker/markers1vs2.txt",quote=F,sep="\t")
+DE16vs7 <- read.table("gx/findmarker/markers16vsbehind.txt",head=T)
+DE7vs6 <- read.table("gx/findmarker/markers7vsbehind.txt",head=T)
+DE6vs13 <- read.table("gx/findmarker/markers6vsbehind.txt",head=T)
+DE13vs18 <- read.table("gx/findmarker/markers13vsbehind.txt",head=T)
+DE18vs12 <- read.table("gx/findmarker/markers18vsbehind.txt",head=T)
+DE12vs1 <- read.table("gx/findmarker/markers12vsbehind.txt",head=T)
+DE1vs0 <- read.table("gx/findmarker/markers1vsbehind.txt",head=T)
+DE0vs5 <- read.table("gx/findmarker/markers0vsbehind.txt",head=T)
+DE0vs2 <- read.table("gx/findmarker/markers0vs2.txt",head=T)
+DE1vs2 <- read.table("gx/findmarker/markers1vs2.txt",head=T)
+DE16vs7$type <- "up"
+DE16vs7[DE16vs7[,2] < 0,6] = "down"
+DE7vs6$type <- "up"
+DE7vs6[DE7vs6[,2] < 0,6] = "down"
+DE6vs13$type <- "up"
+DE6vs13[DE6vs13[,2] < 0,6] = "down"
+DE13vs18$type <- "up"
+DE13vs18[DE13vs18[,2] < 0,6] = "down"
+DE18vs12$type <- "up"
+DE18vs12[DE18vs12[,2] < 0,6] = "down"
+DE12vs1$type <- "up"
+DE12vs1[DE12vs1[,2] < 0,6] = "down"
+DE1vs0$type <- "up"
+DE1vs0[DE1vs0[,2] < 0,6] = "down"
+DE0vs5$type <- "up"
+DE0vs5[DE0vs5[,2] < 0,6] = "down"
+DE0vs2$type <- "up"
+DE0vs2[DE0vs2[,2] < 0,6] = "down"
+DE1vs2$type <- "up"
+DE1vs2[DE1vs2[,2] < 0,6] = "down"
+#table(DE16vs7$type)
+#down   up
+#  91  139
+#table(DE7vs6$type)
+#down   up
+# 153  264
+#table(DE6vs13$type)
+#down   up
+# 128  125
+#table(DE13vs18$type)
+#down   up
+# 236  154
+#table(DE18vs12$type)
+#down   up
+#  13  122
+#table(DE12vs1$type)
+#down   up
+# 108  189
+#table(DE1vs0$type)
+#down   up
+# 111  428
+#table(DE0vs5$type)
+#down   up
+#  43   86
+#table(DE0vs2$type)
+#down   up
+#  49   61
+#table(DE1vs2$type)
+#down   up
+# 100  418
+genes <- unique(c(rownames(DE16vs7),rownames(DE7vs6),rownames(DE6vs13),rownames(DE13vs18),rownames(DE18vs12),rownames(DE12vs1),rownames(DE1vs0),rownames(DE0vs5),rownames(DE1vs2),rownames(DE0vs2)))
+mydata <- data.frame(rownames = genes, DE16vs7 = "NOT",DE7vs6 = "NOT",DE6vs13 = "NOT",DE13vs18 = "NOT",DE18vs12 = "NOT",DE12vs1 = "NOT",DE1vs0 = "NOT",DE0vs5 = "NOT",DE1vs2 = "NOT",DE0vs2 = "NOT")
+rownames(mydata) <- mydata$rownames
+mydata <- mydata[,-1]
+mydata <- data.frame(lapply(mydata, as.character), stringsAsFactors=FALSE)
+rownames(mydata2) <- genes
+mydata2[rownames(DE16vs7),1] = DE16vs7$type
+mydata2[rownames(DE7vs6),2] = DE7vs6$type
+mydata2[rownames(DE6vs13),3] = DE6vs13$type
+mydata2[rownames(DE13vs18),4] = DE13vs18$type
+mydata2[rownames(DE18vs12),5] = DE18vs12$type
+mydata2[rownames(DE12vs1),6] = DE12vs1$type
+mydata2[rownames(DE1vs0),7] = DE1vs0$type
+mydata2[rownames(DE0vs5),8] = DE0vs5$type
+mydata2[rownames(DE1vs2),9] = DE1vs2$type
+mydata2[rownames(DE0vs2),10] = DE0vs2$type
+write.table(mydata2, file="gx/findmarker/markers_cluster_summary.txt",quote=F,sep="\t")
+
+setwd("/Users/xileioo/Documents/work/2018/cart_singleCellInDrop-seq/data_12_10xgenomics/outs/my_output/out201907")
+cart <- readRDS("1_cart_ygh_intergrated.rds")
+cluster0vs2.markers <- FindMarkers(cart, ident.1 = 0, ident.2 = 2, logfc.threshold = 0.25)
+cluster1vs2.markers <- FindMarkers(cart, ident.1 = 1, ident.2 = 2, logfc.threshold = 0.25)
+write.table(cluster0vs2.markers, file="gx/findmarker/markers0vs2.txt",quote=F,sep="\t")
+write.table(cluster1vs2.markers, file="gx/findmarker/markers1vs2.txt",quote=F,sep="\t")
+DE16vs7 <- read.table("gx/findmarker/markers16vsbehind.txt",head=T)
+DE7vs6 <- read.table("gx/findmarker/markers7vsbehind.txt",head=T)
+DE6vs13 <- read.table("gx/findmarker/markers6vsbehind.txt",head=T)
+DE13vs18 <- read.table("gx/findmarker/markers13vsbehind.txt",head=T)
+DE18vs12 <- read.table("gx/findmarker/markers18vsbehind.txt",head=T)
+DE12vs1 <- read.table("gx/findmarker/markers12vsbehind.txt",head=T)
+DE1vs0 <- read.table("gx/findmarker/markers1vsbehind.txt",head=T)
+DE0vs5 <- read.table("gx/findmarker/markers0vsbehind.txt",head=T)
+DE0vs2 <- read.table("gx/findmarker/markers0vs2.txt",head=T)
+DE1vs2 <- read.table("gx/findmarker/markers1vs2.txt",head=T)
+DE16vs7$type <- "up"
+DE16vs7[DE16vs7[,2] < 0,6] = "down"
+DE7vs6$type <- "up"
+DE7vs6[DE7vs6[,2] < 0,6] = "down"
+DE6vs13$type <- "up"
+DE6vs13[DE6vs13[,2] < 0,6] = "down"
+DE13vs18$type <- "up"
+DE13vs18[DE13vs18[,2] < 0,6] = "down"
+DE18vs12$type <- "up"
+DE18vs12[DE18vs12[,2] < 0,6] = "down"
+DE12vs1$type <- "up"
+DE12vs1[DE12vs1[,2] < 0,6] = "down"
+DE1vs0$type <- "up"
+DE1vs0[DE1vs0[,2] < 0,6] = "down"
+DE0vs5$type <- "up"
+DE0vs5[DE0vs5[,2] < 0,6] = "down"
+DE0vs2$type <- "up"
+DE0vs2[DE0vs2[,2] < 0,6] = "down"
+DE1vs2$type <- "up"
+DE1vs2[DE1vs2[,2] < 0,6] = "down"
+genes <- unique(c(rownames(DE16vs7),rownames(DE7vs6),rownames(DE6vs13),rownames(DE13vs18),rownames(DE18vs12),rownames(DE12vs1),rownames(DE1vs0),rownames(DE0vs5),rownames(DE1vs2),rownames(DE0vs2)))
+mydata <- data.frame(rownames = genes, DE16vs7 = 0,DE7vs6 = 0,DE6vs13 = 0,DE13vs18 = 0,DE18vs12 = 0,DE12vs1 = 0,DE1vs0 = 0,DE0vs5 = 0,DE1vs2 = 0,DE0vs2 = 0)
+rownames(mydata) <- mydata$rownames
+mydata <- mydata[,-1]
+mydata[rownames(DE16vs7),1] = DE16vs7$avg_logFC
+mydata[rownames(DE7vs6),2] = DE7vs6$avg_logFC
+mydata[rownames(DE6vs13),3] = DE6vs13$avg_logFC
+mydata[rownames(DE13vs18),4] = DE13vs18$avg_logFC
+mydata[rownames(DE18vs12),5] = DE18vs12$avg_logFC
+mydata[rownames(DE12vs1),6] = DE12vs1$avg_logFC
+mydata[rownames(DE1vs0),7] = DE1vs0$avg_logFC
+mydata[rownames(DE0vs5),8] = DE0vs5$avg_logFC
+mydata[rownames(DE1vs2),9] = DE1vs2$avg_logFC
+mydata[rownames(DE0vs2),10] = DE0vs2$avg_logFC
+write.table(mydata, file="gx/findmarker/markers_cluster_summary_fd.txt",quote=F,sep="\t")
+```
+
+```{r}
+setwd("/Users/xileioo/Documents/work/2018/cart_singleCellInDrop-seq/data_12_10xgenomics/outs/my_output/out201907")
+mydata2 <- read.table("gx/findmarker/markers_cluster_summary.txt",head=T)
+mydata <- read.table("gx/findmarker/markers_cluster_summary.txt",head=T)
+
+```
+
+```{r}
+setwd("/Users/xileioo/Documents/work/2018/cart_singleCellInDrop-seq/data_12_10xgenomics/outs/my_output/out201907")
+mydata <- read.table("gx/findmarker/plot_gProfiler_",head=T,sep="\t")
+mydata$pvalue2 <- -log10(mydata$pvalue)
+head(mydata)
+#                               term             termID      pvalue   pvalue2
+#1                        Cell Cycle REAC:R-HSA-1640170 2.51000e-49 48.600326
+#2            Cell Cycle Checkpoints   REAC:R-HSA-69620 1.79000e-27 26.747147
+#3                   DNA Replication   REAC:R-HSA-69306 2.72000e-13 12.565431
+mydata$term <- factor(mydata$term, levels  = mydata$term)
+p <- ggplot(mydata, aes(x=term,y=pvalue2)) + theme_bw()
+p + geom_bar(stat="identity",fill="#E63A31",width=0.8) + coord_flip() +
+theme(legend.title = element_blank(),
+          panel.background=element_blank(),
+          panel.grid.major=element_blank(),
+          panel.grid.minor=element_blank(),
+          plot.background=element_blank()) +
+    labs(y="-log10(P value)", x="")
+pdf("raw_figure/6_enrichment_Reactome_cluster1vs0_positive.pdf")
+```
+
+```{r}
+setwd("/Users/xileioo/Documents/work/2018/cart_singleCellInDrop-seq/data_12_10xgenomics/outs/my_output/out201907")
+cytokineTF <- read.csv("gx/dfcytokineTF.csv")
+head(cytokineTF)
+#    X row.names         p_val  avg_logFC pct.1 pct.2     p_val_adj upordown  from     type
+#1   4     HMGB2 5.570961e-266  0.6263074 1.000 0.999 1.030684e-261     down 16vs7       TF
+#2 163      ATF3  1.071533e-33 -0.5509074 0.364 0.562  1.982443e-29       up 16vs7       TF
+#3 170      KLF2  3.333947e-30  0.4327580 0.590 0.420  6.168136e-26     down 16vs7       TF
+#4 181      CCL4  4.385315e-28  0.6373916 0.518 0.340  8.113272e-24     down 16vs7 cytokine
+cytokine <- cytokineTF[cytokineTF$type == "cytokine",]
+cytokine_ref <- read.table("../../../cart_cell_cytokines_add.txt",sep="\t",head=T)
+cytokine_gene <- unique(c(as.character(cytokine_ref$symbol),as.character(cytokine$row.names)))
+length(cytokine_gene)
+#[1] 36
+cart <- readRDS("1_cart_ygh_intergrated.rds")
+exp <- GetAssayData(object = cart, slot = 'data')
+cytokine_gene2 <- intersect(as.character(cytokine_gene), as.character(rownames(exp)))
+mydata <- exp[cytokine_gene2,]
+p <- DimPlot(cart, reduction = "umap", label = TRUE, label.size=20, vector.friendly=T,pt.size=0.1)
+pbuild <- ggplot2::ggplot_build(p) # Use ggplot_build to deconstruct the ggplot object
+pdata <- pbuild$data[[1]] #
+metaData <-cart@meta.data
+pdata$samples <- metaData$orig.ident
+pdata$group <- metaData$seurat_clusters
+rownames(pdata) <- rownames(metaData)
+head(pdata)
+df <- cbind(pdata, as.data.frame(t(as.matrix(mydata))))
+head(df)
+#           colour           x          y PANEL group shape size fill alpha stroke samples     GZMB      IFNG CCL3 PRF1      TNF      LTA     CSF2 IL2 IL5 IL7
+#sample1_1 #49B500 -9.42727757 -1.3533924     1     7    19  0.1   NA    NA    0.5 sample1 0.813788 0.0000000    0    0 0.813788 0.000000 0.000000   0   0   0
+#sample1_4 #B79F00 -3.07397604 -2.5024652     1     4    19  0.1   NA    NA    0.5 sample1 0.000000 0.0000000    0    0 0.000000 1.213649 0.000000   0   0   0
+#sample1_5 #B79F00 -1.06721973 -5.6507416     1     4    19  0.1   NA    NA    0.5 sample1 1.768531 0.0000000    0    0 0.000000 0.000000 1.444915   0   0   0
+#sample1_7 #C77CFF -6.90457153  0.9826504     1    18    19  0.1   NA    NA    0.5 sample1 1.407203 0.7071349    0    0 0.000000 0.000000 0.000000   0   0   0
+#sample1_8 #B79F00 -1.57303524 -3.8047638     1     4    19  0.1   NA    NA    0.5 sample1 1.397269 0.0000000    0    0 0.000000 0.000000 0.000000   0   0   0
+#sample1_9 #00A9FF -0.06089737 -5.1770291     1    15    19  0.1   NA    NA    0.5 sample1 0.000000 0.0000000    0    0 0.000000 0.000000 0.000000   0   0   0
+#              CXCL8 IL12A IL15 IL21 CXCL10 CCL4     CCL5 IL4 IL10      IL13 IL22     TGFB1  TNFRSF9    CD40LG IL1B IL6 IL17A IL17F     IL32   TNFSF10 CCL3L1
+#sample1_1 0.0000000     0    0    0      0    0 0.000000   0    0 0.0000000    0 0.0000000 1.256436 0.0000000    0   0     0     0 4.459426 0.8137880      0
+#sample1_4 0.7806414     0    0    0      0    0 1.213649   0    0 0.0000000    0 0.7806414 0.000000 0.7806414    0   0     0     0 4.442462 0.0000000      0
+#sample1_5 0.0000000     0    0    0      0    0 0.000000   0    0 0.9634588    0 0.0000000 0.000000 1.7685312    0   0     0     0 5.477507 0.0000000      0
+#sample1_7 0.0000000     0    0    0      0    0 0.000000   0    0 0.0000000    0 0.0000000 0.000000 0.0000000    0   0     0     0 4.709660 0.7071349      0
+#sample1_8 0.0000000     0    0    0      0    0 1.397269   0    0 0.0000000    0 0.0000000 0.000000 0.0000000    0   0     0     0 4.691962 0.0000000      0
+#sample1_9 0.0000000     0    0    0      0    0 0.000000   0    0 0.0000000    0 0.0000000 0.000000 0.0000000    0   0     0     0 4.602992 1.1930937      0
+df <- df[df$samples %in% c("sample1","sample3","sample5"),]
+table(df$group)
+#   0    1    2    3    4    5    6    7    8    9   10   11   12   13   14   15   16   17   18   19   20   21   22   23
+#8543 5090  326   26 3443  899 2497 2338    5   13  133   30 1132 1207    6  370  846  674  779    9   15    9  123    3
+markerCell <- aggregate(df[,12:42], list(df$group), mean)
+library(pheatmap)
+markerCell2 <- markerCell[markerCell$Group.1 %in% c(10,4,15,16,7,6,13,18,12,1,0,20,5,22,2,11),]
+rownames(markerCell2) <- markerCell2$Group.1
+markerCell2 <- markerCell2[,-1]
+markerCell3 <- markerCell2[,-c(7,8,10,12:15,19,25:28)]
+pheatmap(t(markerCell3), scale = "row")
+library(RColorBrewer)
+breaksList = seq(-2, 2, by = 0.2)
+pdata <- t(markerCell3)
+#colnames(pdata) <- c("K_0","J_1","O_2","B_4","C_5","F_6","E_7","A_10","P_11","I_12","G_13","C_15","D_16","H_18","L_20","N_22")
+pdata2 <- pdata[,c(8,4,12,13,7,6,11,14,10,2,1,15,5,16,3,9)]
+pheatmap(pdata2,
+    scale = "row",
+    color = colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(length(breaksList)),
+    breaks = breaksList,
+    cluster_cols = F)
+pdf("raw_figure/7_cytokine_heatmap.pdf")
+```
